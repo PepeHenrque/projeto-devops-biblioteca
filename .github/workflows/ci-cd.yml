@@ -139,12 +139,43 @@ jobs:
           tags: biblioteca:latest
 
   # =========================================================================
-  # 5. Job de DAST: Escaneamento dinâmico com OWASP ZAP contra a aplicação no ar
+  # 5. Job de Smoke Test: Validação das funcionalidades mais importantes do app
+  # =========================================================================
+  smoke:
+    name: Smoke Test
+    runs-on: ubuntu-latest
+    needs: [docker-build]
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Subir app e banco com docker compose
+        run: docker compose up -d --build --wait --wait-timeout 120
+
+      - name: Popular banco de dados MySQL
+        run: |
+          mysql -h 127.0.0.1 -P 3306 -u root -proot biblioteca < db.sql
+
+      - name: Executar smoke test
+        run: node --test tests/smoke/app.smoke.js
+
+      - name: Logs dos containers (em caso de falha)
+        if: failure()
+        run: docker compose logs
+
+      - name: Derrubar app e banco
+        if: always()
+        run: docker compose down -v
+
+  # =========================================================================
+  # 6. Job de DAST: Escaneamento dinâmico com OWASP ZAP contra a aplicação no ar
   # =========================================================================
   dast:
     name: DAST (OWASP ZAP Dynamic Scan)
     runs-on: ubuntu-latest
-    needs: [docker-build]
+    needs: [smoke]
 
     services:
       mysql:
