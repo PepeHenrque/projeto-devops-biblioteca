@@ -1,10 +1,11 @@
+
 name: CI/CD Pipeline - Biblioteca
 
 on:
   push:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
   pull_request:
-    branches: [ main, master, develop ]
+    branches: [main, master, develop]
   workflow_dispatch:
 
 permissions:
@@ -13,11 +14,12 @@ permissions:
 
 jobs:
   # =========================================================================
-  # 1. Job de Lint/Qualidade (análise de sintaxe e dependências)
+  # 1. Job de Lint/Qualidade
   # =========================================================================
   lint-qualidade:
     name: Lint / Qualidade (Sintaxe e Dependências)
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
@@ -38,7 +40,7 @@ jobs:
         run: npm ls --depth=0
 
   # =========================================================================
-  # 2. Job de Testes automatizados com MySQL real como service container
+  # 2. Job de Testes Automatizados
   # =========================================================================
   testes:
     name: Testes Automatizados (MySQL Service Container)
@@ -84,12 +86,13 @@ jobs:
         run: npm test
 
   # =========================================================================
-  # 3. Job de SAST: Análise estática com Trivy e npm audit
+  # 3. Job de SAST
   # =========================================================================
   sast:
     name: SAST (Trivy e npm audit)
     runs-on: ubuntu-latest
     needs: [lint-qualidade]
+
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
@@ -103,11 +106,11 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
-      - name: Análise estática de vulnerabilidades de dependências (npm audit)
+      - name: Análise estática de vulnerabilidades de dependências
         run: npm audit --audit-level=critical
         continue-on-error: true
 
-      - name: Análise estática de segurança com Trivy (SAST no repositório)
+      - name: Análise estática de segurança com Trivy
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: 'fs'
@@ -117,12 +120,13 @@ jobs:
           severity: 'CRITICAL,HIGH'
 
   # =========================================================================
-  # 4. Job de Docker Build da imagem da biblioteca
+  # 4. Job de Docker Build
   # =========================================================================
   docker-build:
     name: Docker Build da Imagem da Biblioteca
     runs-on: ubuntu-latest
     needs: [testes, sast]
+
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
@@ -139,7 +143,7 @@ jobs:
           tags: biblioteca:latest
 
   # =========================================================================
-  # 5. Job de Smoke Test: Validação das funcionalidades mais importantes do app
+  # 5. Job de Smoke Test
   # =========================================================================
   smoke:
     name: Smoke Test
@@ -151,14 +155,23 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
+      - name: Gerar credenciais temporárias para CI
+        shell: bash
+        run: |
+          echo "MYSQL_ROOT_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
+          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
+
       - name: Subir app e banco com docker compose
         run: docker compose up -d --build --wait --wait-timeout 120
 
-      - name: Popular banco de dados MySQL
+      - name: Validar saúde da API
         run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -proot biblioteca < db.sql
+          curl --fail --silent --show-error \
+            http://localhost:3001/health
 
       - name: Executar smoke test
+        env:
+          PORT: 3001
         run: node --test tests/smoke/app.smoke.js
 
       - name: Logs dos containers (em caso de falha)
@@ -170,7 +183,7 @@ jobs:
         run: docker compose down -v
 
   # =========================================================================
-  # 6. Job de DAST: Escaneamento dinâmico com OWASP ZAP contra a aplicação no ar
+  # 6. Job de DAST
   # =========================================================================
   dast:
     name: DAST (OWASP ZAP Dynamic Scan)
@@ -237,4 +250,3 @@ jobs:
           fail_action: false
           allow_issue_writing: false
           cmd_options: '-a'
-
