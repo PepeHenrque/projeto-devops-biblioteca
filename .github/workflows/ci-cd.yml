@@ -71,8 +71,10 @@ jobs:
         run: npm ci
 
       - name: Popular banco de dados MySQL com schema e dados iniciais
+        env:
+          MYSQL_PWD: ${{ secrets.MYSQL_PASSWORD}}
         run: |
-          mysql -h ${{ secrets.DB_HOST}} -P ${{ vars.DB_PORT}} -u ${{ secrets.DB_USER}} -p"${{ secrets.MYSQL_PASSWORD}}" biblioteca < db.sql
+          mysql -h ${{ secrets.DB_HOST}} -P ${{ vars.DB_PORT}} -u ${{ secrets.DB_USER}} biblioteca < db.sql
 
       - name: Executar testes automatizados
         env:
