@@ -152,16 +152,15 @@ jobs:
     runs-on: ubuntu-latest
     needs: [docker-build]
     timeout-minutes: 5
+    env:
+      DB_USER: ${{ secrets.DB_USER }}
+      MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      DB_PORT: ${{ vars.DB_PORT }}
 
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
-
-      - name: Gerar credenciais temporárias para CI
-        shell: bash
-        run: |
-          echo "MYSQL_ROOT_PASSWORD=$(openssl rand -hex 24)" >> "$GITHUB_ENV"
-          echo "JWT_SECRET=$(openssl rand -hex 32)" >> "$GITHUB_ENV"
 
       - name: Subir app e banco com docker compose
         run: docker compose up -d --build --wait --wait-timeout 120
