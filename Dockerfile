@@ -1,28 +1,18 @@
-# Estágio 1: Instalação de dependências de produção
-FROM node:22-alpine AS dependencies
-WORKDIR /app
-
-COPY package*.json ./
-RUN npm ci --omit=dev
-
-# Estágio 2: Imagem final de execução (leve e segura)
-FROM node:22-alpine AS runner
-WORKDIR /app
+FROM node:22-alpine
 
 ENV NODE_ENV=production
-ENV PORT=3000
+WORKDIR /app
 
-# Usar usuário não-root (node) fornecido pela imagem oficial
-USER node
-
-# Copiar dependências de produção do estágio anterior
-COPY --chown=node:node --from=dependencies /app/node_modules ./node_modules
 COPY --chown=node:node package*.json ./
-COPY --chown=node:node src/ ./src/
-COPY --chown=node:node public/ ./public/
+RUN npm ci --omit=dev && npm cache clean --force
 
+COPY --chown=node:node src ./src
+COPY --chown=node:node public ./public
+
+USER node
 EXPOSE 3000
 
-# Inicialização da aplicação
-CMD ["node", "src/server.js"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://localhost:3000/health || exit 1
 
+CMD ["node", "src/server.js"]
