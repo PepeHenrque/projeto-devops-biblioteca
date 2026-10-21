@@ -1,18 +1,20 @@
-version: '3.8'
 
 services:
   db:
     image: mysql:8.0
     container_name: biblioteca-db
     restart: always
+
     environment:
       MYSQL_ROOT_PASSWORD: $secrets.MYSQL_PASSWORD
       MYSQL_DATABASE: biblioteca
     ports:
-      - "3306:3306"
+      - "3307:3306"
+
     volumes:
       - db_data:/var/lib/mysql
       - ./db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "$secrets.DB_USER", "-p$secrets.MYSQL_PASSWORD"]
       interval: 5s
@@ -23,13 +25,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+
     container_name: biblioteca-app
     restart: always
+
     depends_on:
       db:
         condition: service_healthy
+
     ports:
-      - "3000:3000"
+      - "3001:3000"
+
     environment:
       PORT: 3000
       JWT_SECRET: $secrets.JWT_SECRET
