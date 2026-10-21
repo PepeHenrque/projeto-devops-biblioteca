@@ -72,13 +72,13 @@ jobs:
 
       - name: Popular banco de dados MySQL com schema e dados iniciais
         run: |
-          mysql -h 127.0.0.1 -P ${{ vars.DB_PORT}} -u ${{ secrets.DB_USER}} -p ${{ secrets.MYSQL_PASSWORD}} biblioteca < db.sql
+          mysql -h ${{ secrets.DB_HOST}} -P ${{ vars.DB_PORT}} -u ${{ secrets.DB_USER}} -p"${{ secrets.MYSQL_PASSWORD}}" biblioteca < db.sql
 
       - name: Executar testes automatizados
         env:
           PORT: 3000
           JWT_SECRET: ${{ secrets.JWT_SECRET}}
-          DB_HOST: 127.0.0.1
+          DB_HOST: ${{ secrets.DB_HOST}}
           DB_PORT: ${{ vars.DB_PORT}}
           DB_USER: ${{ secrets.DB_USER}}
           DB_PASSWORD: ${{ secrets.MYSQL_PASSWORD}}
