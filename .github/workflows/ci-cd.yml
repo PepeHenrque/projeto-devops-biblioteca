@@ -49,7 +49,7 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PASSWORD}}
           MYSQL_DATABASE: biblioteca
         ports:
           - 3306:3306
@@ -70,16 +70,16 @@ jobs:
 
       - name: Popular banco de dados MySQL com schema e dados iniciais
         run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -proot biblioteca < db.sql
+          mysql -h 127.0.0.1 -P ${{ vars.DB_PORT}} -u ${{ secrets.DB_USER}} -p ${{ secrets.MYSQL_PASSWORD}} biblioteca < db.sql
 
       - name: Executar testes automatizados
         env:
           PORT: 3000
-          JWT_SECRET: ci-jwt-secret-para-testes-unitarios-e-integracao
+          JWT_SECRET: ${{ secrets.JWT_SECRET}}
           DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: root
+          DB_PORT: ${{ vars.DB_PORT}}
+          DB_USER: ${{ secrets.DB_USER}}
+          DB_PASSWORD: ${{ secrets.MYSQL_PASSWORD}}
           DB_NAME: biblioteca
         run: npm test
 
@@ -150,7 +150,7 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: root
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_PASSWORD}}
           MYSQL_DATABASE: biblioteca
         ports:
           - 3306:3306
@@ -171,16 +171,16 @@ jobs:
 
       - name: Popular banco de dados MySQL
         run: |
-          mysql -h 127.0.0.1 -P 3306 -u root -proot biblioteca < db.sql
+          mysql -h ${{ secrets.DB_HOST}} -P ${{ vars.DB_PORT}} -u ${{ secrets.DB_USER}} -p ${{ secrets.MYSQL_PASSWORD}} biblioteca < db.sql
 
       - name: Iniciar aplicação no ar (background)
         env:
           PORT: 3000
-          JWT_SECRET: zap-security-dast-jwt-token-secret-key-32b
-          DB_HOST: 127.0.0.1
-          DB_PORT: 3306
-          DB_USER: root
-          DB_PASSWORD: root
+          JWT_SECRET: ${{ secrets.JWT_SECRET}}
+          DB_HOST: ${{ secrets.DB_HOST}}
+          DB_PORT: ${{ vars.DB_PORT}}
+          DB_USER: ${{ secrets.DB_USER}}
+          DB_PASSWORD: ${{ secrets.MYSQL_PASSWORD}}
           DB_NAME: biblioteca
         run: |
           npm start &
@@ -206,4 +206,3 @@ jobs:
           fail_action: false
           allow_issue_writing: false
           cmd_options: '-a'
-
