@@ -1,4 +1,3 @@
-
 services:
   db:
     image: mysql:8.0
@@ -6,9 +5,8 @@ services:
     restart: always
 
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Defina MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME:-biblioteca}
-
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: biblioteca
     ports:
       - "3307:3306"
 
@@ -17,12 +15,11 @@ services:
       - ./db.sql:/docker-entrypoint-initdb.d/init.sql:ro
 
     healthcheck:
-      test:
-        - CMD-SHELL
-        - 'MYSQL_PWD="$${MYSQL_ROOT_PASSWORD}" mysqladmin ping -h 127.0.0.1 -u root --silent'
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 20
+      start_period: 30s
 
   app:
     build:
@@ -41,12 +38,12 @@ services:
 
     environment:
       PORT: 3000
-      JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET}
+      JWT_SECRET: ${JWT_SECRET}
       DB_HOST: db
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Defina MYSQL_ROOT_PASSWORD}
-      DB_NAME: ${DB_NAME:-biblioteca}
+      DB_PORT: ${DB_PORT}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      DB_NAME: biblioteca
 
 volumes:
   db_data:
